@@ -12,11 +12,19 @@
 
 import argparse
 from dns import resolver
+from sys import platform
 import time
 import os
 
+
 def sendNotification(text, title):
-    string = "~/bin/notify-send '" + title + "' '" + text + "'"
+    if platform == "linux" or platform == "linux2":
+        string = "notify-send '" + title + "' '" + text + "'"
+    if platform == "darwin":
+        # determine linksafe path of mac-notify-send :)
+        file_path = os.path.realpath(__file__)
+        file_path = os.path.dirname(file_path)
+        string = file_path+"/mac-notify-send '" + title + "' '" + text + "'"
     os.system(string.encode("utf-8"))
 
 def checkEntry(dns, address):
@@ -34,7 +42,7 @@ def checkEntry(dns, address):
     if len(address) > 0:
         if hostnameRecord != address:
             return False
-     
+
     return True
 
 
