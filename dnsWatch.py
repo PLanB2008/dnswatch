@@ -5,6 +5,9 @@
 # Version 1.0 from 25.02.2022
 # by andreas.till@netzint.de
 # Version 1.1 from 18.05.2022
+# by andreas.till@team-till.de
+# Version 1.2 from 01.07.2025
+#
 # needs:
 # pip3 install dnspython
 #
@@ -27,23 +30,48 @@ def sendNotification(text, title):
         string = file_path+"/mac-notify-send '" + title + "' '" + text + "'"
     os.system(string.encode("utf-8"))
 
-def checkEntry(dns, address):
+def checkEntry(dns, expected_address):
     res = resolver.Resolver()
     res.nameservers = ['1.1.1.1']
+
     try:
-        hostnameRecord = res.resolve(dns)
-        for rdata in hostnameRecord:
-            print (rdata.address)
-            hostnameRecord = rdata.address
+        # Try resolving CNAME first
+        cname_records = res.resolve(dns, 'CNAME')
+        for rdata in cname_records:
+            cname_target = str(rdata.target).rstrip('.')
+            print("CNAME:", cname_target)
+
+            if expected_address:
+                expected_clean = expected_address.rstrip('.')
+                # Loose match: exact OR endswith
+                if cname_target == expected_clean or cname_target.endswith("." + expected_clean):
+                    # Success! Now resolve A records for bonus
+                    a_records = res.resolve(cname_target, 'A')
+                    for a in a_records:
+                        print("A (via CNAME):", a.address)
+                    return cname_target
+                else:
+                    return False
+            return cname_target
+
+    except resolver.NoAnswer:
+        pass  # No CNAME, fall back to A
+
     except Exception as e:
-        print (str(e))
+        print("CNAME resolution failed:", str(e))
+
+    try:
+        a_records = res.resolve(dns, 'A')
+        for rdata in a_records:
+            print("A:", rdata.address)
+            if expected_address and rdata.address != expected_address:
+                return False
+            return rdata.address
+    except Exception as e:
+        print("A record resolution failed:", str(e))
         return False
 
-    if len(address) > 0:
-        if hostnameRecord != address:
-            return False
-
-    return hostnameRecord
+    return False
 
 
 def main():
@@ -56,7 +84,7 @@ def main():
         args.address = ''
     remember = 0
 
-    print("Lukas DNSWatcher has started for " + args.dns + " -> " + args.address)
+    print("DNSWatcher has started for " + args.dns + " -> " + args.address)
 
     try:
         while True:
