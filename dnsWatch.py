@@ -90,8 +90,8 @@ def main():
         while True:
             check = checkEntry(args.dns, args.address)
             if check:
-                sendNotification("Entry is now set correctly!\n" + args.dns + " -> " + check, "Lukas DNS Watcher")
-                print("Entry is now set correctly!\n" + args.dns + " -> " + check , "Lukas DNS Watcher")
+                sendNotification("Entry is now set correctly!\n" + args.dns + " -> " + check, "👨🏻‍💻 DNS Watcher")
+                print("Entry is now set correctly!\n" + args.dns + " -> " + check , "👨🏻‍💻 DNS Watcher")
                 remember += 1
                 if remember > 5:
                     exit(0)
